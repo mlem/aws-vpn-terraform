@@ -21,7 +21,7 @@ Build your own VPN server in less than 5 minutes at any of the 16 regions of AWS
 <ul>
   <li>Unzip downloaded terraform file</li>
   <li>Add terraform executable file to your environment variable (Optional)</li>
-  <li>Download main.tf, variables.tf, private-key.ppk, public-key and user-data.txt files. <strong>Note: You can generate your own private & public key</strong></li>
+  <li>Download main.tf, variables.tf, private-key.ppk, public-key and user-data.sh files. <strong>Note: You can generate your own private & public key</strong></li>
   <li>Open terminal(linux)/command prompt(windows)</li>
   <li>Run <code>terraform init</code> command</li>
   <li>Run <code>terraform apply</code> command. Provide <strong>yes</strong> as input if asked and hit enter to start the process of setting up your own private VPN server</li>
