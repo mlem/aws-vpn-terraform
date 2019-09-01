@@ -1,5 +1,5 @@
 provider "aws" {
-  region = "${data.template_file.aws_region.rendered}"
+  region = "eu-central-1"
   profile = "${var.aws_profile}"
 }
 
@@ -8,41 +8,13 @@ data "template_file" "aws_region" {
 
   vars {
     #Change the number 13 to number specific to your region from variables.tf file.
-    region = "${lookup(var.aws_region_list,"13")}"
+    region = "eu-central-1"
   }
 }
 
 #================ Print AWS region selected ================
 output "aws_region" {
   value = "${data.template_file.aws_region.rendered}"
-}
-
-#================ Fetching latest AMI ================
-data "aws_ami" "aws_latest_ami" {
-  most_recent = "true"
-
-  filter {
-    name   = "name"
-    values = ["OpenVPN Access Server*"]
-  }
-  filter {
-    name = "virtualization-type"
-    values = ["hvm"]
-  }
-  filter {
-    name = "root-device-type"
-    values = ["ebs"]
-  }
-
-  owners = ["573553919781"]
-}
-
-#================ Print AMI ID ================
-output "ami_id" {
-  value = "${data.aws_ami.aws_latest_ami.image_id}"
-}
-output "ami_name" {
-  value = "${data.aws_ami.aws_latest_ami.name}"
 }
 
 #================ VPC ================
@@ -52,6 +24,7 @@ resource "aws_vpc" "vpc" {
 
   tags {
     Name = "vpn-vpc"
+    env = "vpn"
   }
 }
 
@@ -61,6 +34,7 @@ resource "aws_internet_gateway" "igw" {
 
   tags {
     Name = "vpn-vpc-igw"
+    env = "vpn"
   }
 }
 
@@ -73,6 +47,7 @@ resource "aws_subnet" "pub_subnet" {
 
   tags {
     Name = "vpn-pub-subnet"
+    env = "vpn"
   }
 }
 
@@ -87,6 +62,7 @@ resource "aws_route_table" "pub_rtb" {
 
   tags {
     Name = "pub-rtb"
+    env = "vpn"
   }
 }
 
@@ -136,27 +112,23 @@ resource "aws_security_group" "vpn_sg" {
 
   tags {
     Name = "vpn-sg"
+    env = "vpn"
   }
-}
-
-#================ Key Pair ================
-resource "aws_key_pair" "vpn_key" {
-  key_name = "vpn-key"
-  public_key = "${file("public-key")}"
 }
 
 #================ VPN Instance ================
 resource "aws_instance" "instance" {
-  ami = "${data.aws_ami.aws_latest_ami.id}"
+  ami = "ami-00a75511aff95fb1e"
   availability_zone = "${data.template_file.aws_region.rendered}a"
   instance_type = "${var.instance_type}"
-  key_name = "${aws_key_pair.vpn_key.key_name}"
+  key_name = "test_key_pair"
   vpc_security_group_ids = ["${aws_security_group.vpn_sg.id}"]
   subnet_id = "${aws_subnet.pub_subnet.id}"
-  user_data = "${file("user-data.txt")}"
+  user_data = "${file("user-data.sh")}"
 
   tags {
     Name = "vpn-instance"
+    env = "vpn"
   }
 }
 
@@ -164,4 +136,9 @@ resource "aws_instance" "instance" {
 resource "aws_eip" "eip" {
   instance = "${aws_instance.instance.id}"
   vpc = "true"
+
+  tags {
+    Name = "vpn-ip"
+    env = "vpn"
+  }
 }
