@@ -21,5 +21,5 @@ variable "aws_profile" {
   default = "default"
 }
 variable "instance_type" {
-  default = "t2.micro"
+  default = "t3.nano"
 }

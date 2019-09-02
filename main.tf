@@ -116,8 +116,35 @@ resource "aws_security_group" "vpn_sg" {
   }
 }
 
+#================ VPN Spot Instance Role/Profile ================
+data "aws_iam_policy_document" "instance_assume_role_policy_for_ec2" {
+  statement {
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["ec2.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "spot_instance_role" {
+  assume_role_policy = "${data.aws_iam_policy_document.instance_assume_role_policy_for_ec2.json}"
+  name = "SpotInstanceRoleFor_OpenVPN"
+}
+
+resource "aws_iam_instance_profile" "spot_instance_profile" {
+  name = "spot_instance_profile_for_openvpn"
+  role = "${aws_iam_role.spot_instance_role.name}"
+}
+
 #================ VPN Instance ================
-resource "aws_instance" "instance" {
+resource "aws_spot_instance_request" "instance_request" {
+  count = 1
+  spot_price = "0.005"
+  iam_instance_profile = "${aws_iam_instance_profile.spot_instance_profile.name}"
+  wait_for_fulfillment = true
+
   ami = "ami-00a75511aff95fb1e"
   availability_zone = "${data.template_file.aws_region.rendered}a"
   instance_type = "${var.instance_type}"
@@ -134,7 +161,7 @@ resource "aws_instance" "instance" {
 
 #================ Elastic IP (Optional) ================
 resource "aws_eip" "eip" {
-  instance = "${aws_instance.instance.id}"
+  instance = "${aws_spot_instance_request.instance_request.spot_instance_id}"
   vpc = "true"
 
   tags {
